@@ -28,7 +28,19 @@ export default function RutherfordDemo() {
   const lastTime = useRef(0);
   const histogram = useRef(new Array(18).fill(0));
 
+  // NEW: Track simulation progress
+  const [simCount, setSimCount] = useState(0);
+  const [simGoal, setSimGoal] = useState(500); // adjustable goal
+
+  const resetSimulation = () => {
+    particles.current = [];
+    histogram.current = new Array(18).fill(0);
+    setSimCount(0);
+    lastTime.current = 0;
+  };
+
   const emitParticle = () => {
+    if (simCount >= simGoal) return;
     const impact = (Math.random() - 0.5) * 300;
     particles.current.push({
       x: -200,
@@ -38,6 +50,7 @@ export default function RutherfordDemo() {
       trail: [],
       alive: true,
     });
+    setSimCount((c) => c + 1);
   };
 
   const updatePhysics = (dt) => {
@@ -117,7 +130,7 @@ export default function RutherfordDemo() {
     if (!canvas) return;
     const ctx = canvas.getContext("2d");
 
-    if (time - lastTime.current > 1000 / (beamRate * 60)) {
+    if (simCount < simGoal && time - lastTime.current > 1000 / (beamRate * 60)) {
       emitParticle();
       lastTime.current = time;
     }
@@ -129,86 +142,88 @@ export default function RutherfordDemo() {
 
   useEffect(() => {
     requestAnimationFrame(animate);
-  }, [mode, beamRate, alphaEnergy, k, Z, zoom, panX, panY]);
+  }, [mode, beamRate, alphaEnergy, k, Z, zoom, panX, panY, simGoal]);
 
   return (
-    <div className="flex flex-col items-center text-white gap-6 p-6">
+    <div className="flex flex-col items-center text-white gap-6 p-6 w-full">
       <h1 className="text-3xl font-bold">Advanced Rutherford Scattering Simulator</h1>
 
-      <canvas
-        ref={canvasRef}
-        width={800}
-        height={600}
-        className="bg-gray-900 rounded-2xl shadow-xl"
-      />
+      {/* NEW LAYOUT: Controls placed beside visualization */}
+      <div className="flex flex-row w-full max-w-6xl gap-6">
+        <canvas
+          ref={canvasRef}
+          width={800}
+          height={600}
+          className="bg-gray-900 rounded-2xl shadow-xl"
+        />
 
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6 w-full max-w-5xl p-4 bg-gray-800 rounded-xl">
-        <div>
-          <label>Model Mode</label>
-          <select
-            value={mode}
-            onChange={(e) => setMode(e.target.value)}
-            className="w-full p-2 bg-gray-700 rounded"
+        <div className="flex flex-col gap-4 bg-gray-800 p-4 rounded-xl w-80">
+          <div>
+            <label>Model Mode</label>
+            <select
+              value={mode}
+              onChange={(e) => setMode(e.target.value)}
+              className="w-full p-2 bg-gray-700 rounded"
+            >
+              <option value="rutherford">Rutherford (Correct)</option>
+              <option value="plum">Plum-Pudding (Incorrect)</option>
+            </select>
+          </div>
+
+          <div>
+            <label>Nuclear Charge Z</label>
+            <input
+              type="range"
+              min="1"
+              max="6"
+              step="1"
+              value={Z}
+              onChange={(e) => setZ(parseInt(e.target.value))}
+              className="w-full"
+            />
+          </div>
+
+          <div>
+            <label>Beam Rate</label>
+            <input
+              type="range"
+              min="0.1"
+              max="2"
+              step="0.1"
+              value={beamRate}
+              onChange={(e) => setBeamRate(parseFloat(e.target.value))}
+              className="w-full"
+            />
+          </div>
+
+          <div>
+            <label>Simulation Goal: {simGoal} particles</label>
+            <input
+              type="range"
+              min="100"
+              max="2000"
+              step="100"
+              value={simGoal}
+              onChange={(e) => setSimGoal(parseInt(e.target.value))}
+              className="w-full"
+            />
+          </div>
+
+          <div className="p-2 bg-gray-700 rounded text-center">
+            Simulation Progress: {simCount} / {simGoal}
+          </div>
+
+          <button
+            onClick={resetSimulation}
+            className="mt-2 bg-red-500 hover:bg-red-600 text-white px-4 py-2 rounded"
           >
-            <option value="rutherford">Rutherford (Correct)</option>
-            <option value="plum">Plum-Pudding (Incorrect)</option>
-          </select>
-        </div>
-
-        <div>
-          <label>Nuclear Charge Z</label>
-          <input
-            type="range"
-            min="1"
-            max="6"
-            step="1"
-            value={Z}
-            onChange={(e) => setZ(parseInt(e.target.value))}
-            className="w-full"
-          />
-        </div>
-
-        <div>
-          <label>Zoom</label>
-          <input
-            type="range"
-            min="0.5"
-            max="3"
-            step="0.1"
-            value={zoom}
-            onChange={(e) => setZoom(parseFloat(e.target.value))}
-            className="w-full"
-          />
-        </div>
-
-        <div>
-          <label>Pan X</label>
-          <input
-            type="range"
-            min="-200"
-            max="200"
-            step="5"
-            value={panX}
-            onChange={(e) => setPanX(parseFloat(e.target.value))}
-            className="w-full"
-          />
-        </div>
-
-        <div>
-          <label>Pan Y</label>
-          <input
-            type="range"
-            min="-200"
-            max="200"
-            step="5"
-            value={panY}
-            onChange={(e) => setPanY(parseFloat(e.target.value))}
-            className="w-full"
-          />
+            Reset Simulation
+          </button>
         </div>
       </div>
 
-      <div className="bg-gray-800 p-4 rounded-xl w-full max-w-3xl">
+      {/* HISTOGRAM BELOW */}
+      <div className="bg-gray-800 p-4 rounded-xl w-full max-w-4xl">
         <h2 className="text-xl mb-2">Scattering-Angle Histogram</h2>
         <div style={{ height: "300px" }}>
           <Bar
