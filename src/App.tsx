@@ -5,13 +5,24 @@ import {
   CategoryScale,
   LinearScale,
   BarElement,
+  LineController, // Add this
   LineElement,
   PointElement,
   Tooltip,
   Legend,
 } from "chart.js";
 
-ChartJS.register(CategoryScale, LinearScale, BarElement, LineElement, PointElement, Tooltip, Legend);
+// Register all components including LineController
+ChartJS.register(
+  CategoryScale, 
+  LinearScale, 
+  BarElement,
+  LineController, // Add this line
+  LineElement, 
+  PointElement, 
+  Tooltip, 
+  Legend
+);
 
 export default function RutherfordDemo() {
   const canvasRef = useRef(null);
